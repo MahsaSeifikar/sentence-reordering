@@ -11,14 +11,17 @@ def create_train_data(instance):
     sorted_pair = sorted(zip(instance['indexes'], instance['sentences']))
     for i in range(len(sorted_pair)):
         for j in range(i+1, len(sorted_pair)):
-            output.append([instance["ID"],  sorted_pair[i][1].lower(), sorted_pair[j][1].lower(), (j-i-1), 1])
-            output.append([instance["ID"],  sorted_pair[j][1].lower(), sorted_pair[i][1].lower(), (j-i-1), 0])
+            output.append([instance["ID"],  sorted_pair[i][1].lower(), sorted_pair[j][1].lower(), (j-i-1), 0])
+            output.append([instance["ID"],  sorted_pair[j][1].lower(), sorted_pair[i][1].lower(), (j-i-1), 1])
     return (output, "train")
+
+
 
 
 def create_test_data(instance):
     output = {}
     output["ID"] = instance["ID"]
+    
     output["Pairs"] = []
 
     for a, b in itertools.combinations(list(range(6)), 2):    

@@ -14,6 +14,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
 from transformers import BertForSequenceClassification, BertTokenizer, AdamW
 from transformers import DataProcessor, InputExample, InputFeatures
 from transformers import glue_convert_examples_to_features as convert_examples_to_features
+from transformers import BertForNextSentencePrediction
 
 from transformers import get_linear_schedule_with_warmup
 
@@ -116,6 +117,12 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
             #   [0]: input ids 
             #   [1]: attention masks
             #   [2]: labels 
+#             b_input_ids = batch[0].to(device)
+#             b_input_mask = batch[1].to(device)
+# #             b_token_type_ids = batch[2].to(device)
+#             b_labels = batch[2].to(device)
+            
+            
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_token_type_ids = batch[2].to(device)
@@ -218,6 +225,12 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
             #   [0]: input ids 
             #   [1]: attention masks
             #   [2]: labels 
+#             b_input_ids = batch[0].to(device)
+#             b_input_mask = batch[1].to(device)
+# #             b_token_type_ids = batch[2].to(device)
+#             b_labels = batch[2].to(device)
+            
+            
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_token_type_ids = batch[2].to(device)
@@ -283,7 +296,7 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
     print("Training complete!")
 
     print("Total training took {:} (h:mm:ss)".format(format_time(time.time()-total_t0)))
-    model.save_pretrained("save_model/v1_distance_0")
+    model.save_pretrained("save_model/v2_d_sample_60000")
 
     
 
@@ -292,22 +305,11 @@ if __name__=='__main__':
     ts = time.time()
 
     max_seq_length = 128
-#     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-#     train_dataset, val_dataset = get_datasets(tokenizer, max_seq_length) 
     
-#     print(f'Time in parallel: {time.time() - ts}')
-
-#     with open("train_distance_1.pkl", 'wb') as f:
-#         pickle.dump(train_dataset, f)
-
-        
-#     with open("val_distance_1.pkl", 'wb') as f:
-#         pickle.dump(val_dataset, f)
-    
-    with open("data/train_distance_0.pkl", 'rb') as f:
+    with open("train_d_sample_6000.pkl", 'rb') as f:
         train_dataset = pickle.load(f)
 
-    with open("data/val_distance_0.pkl", 'rb') as f:
+    with open("test_d_sample_6000.pkl", 'rb') as f:
         val_dataset = pickle.load(f)
 
     
@@ -334,6 +336,9 @@ if __name__=='__main__':
     model = BertForSequenceClassification.from_pretrained(
         'bert-base-uncased',
     )
+#     model = BertForNextSentencePrediction.from_pretrained(
+#         'bert-base-uncased',
+#     )
     model.cuda()
     
     # Note: AdamW is a class from the huggingface library (as opposed to pytorch) 
@@ -356,7 +361,6 @@ if __name__=='__main__':
     scheduler = get_linear_schedule_with_warmup(optimizer, 
                                                 num_warmup_steps = 0, # Default value in run_glue.py
                                                 num_training_steps = total_steps)
-
     
     # Train Model
     train_model(model, train_dataloader, validation_dataloader, epochs, scheduler, optimizer)
