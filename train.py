@@ -5,40 +5,26 @@ import numpy as np
 import torch
 import time
 import random
-import multiprocessing as mp
 
 
 from torch.utils.data import random_split
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset, Dataset)
 from transformers import BertForSequenceClassification, BertTokenizer, AdamW
-from transformers import DataProcessor, InputExample, InputFeatures
-from transformers import glue_convert_examples_to_features as convert_examples_to_features
-from transformers import BertForNextSentencePrediction
-
-from transformers import get_linear_schedule_with_warmup
+from utils import format_time
 
 
-
-def format_time(elapsed):
-    '''
-    Takes a time in seconds and returns a string hh:mm:ss
-    '''
-    # Round to the nearest second.
-    elapsed_rounded = int(round((elapsed)))
-    
-    # Format as hh:mm:ss
-    return str(datetime.timedelta(seconds=elapsed_rounded))
-
-# Function to calculate the accuracy of our predictions vs labels
 def flat_accuracy(preds, labels):
+    """ Calculate the accuracy of our predictions vs labels
+
+    """
     pred_flat = np.argmax(preds, axis=1).flatten()
     labels_flat = labels.flatten()
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
 
-def train_model(model, train_dataloader, validation_dataloader, epochs, scheduler, optimizer):
+def train_model(model, train_dataloader, validation_dataloader, epochs, scheduler, optimizer, num_sample):
 
     
     seed_val = 42
@@ -49,17 +35,10 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
     torch.cuda.manual_seed_all(seed_val)
 
     if torch.cuda.is_available():    
-
         device = torch.device("cuda")
-    
-        print('There are %d GPU(s) available.' % torch.cuda.device_count())
-
-        print('We will use the GPU:', torch.cuda.get_device_name(0))
 
     else:
-        print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
-    training_stats = []
 
     total_t0 = time.time()
 
@@ -69,7 +48,7 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
        
 
         print("")
-        print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
+        print(f'======== Epoch {epoch_i + 1} / {epochs} ========')
         print('Training...')
 
         t0 = time.time()
@@ -82,8 +61,7 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
             if step % 40 == 0 and not step == 0:
                 elapsed = format_time(time.time() - t0)
 
-                print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
-
+                print(f'  Batch {step}  of  {len(train_dataloader)}.    Elapsed: {elapsed}.')
             
             
             b_input_ids = batch[0].to(device)
@@ -118,8 +96,8 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
         training_time = format_time(time.time() - t0)
 
         print("")
-        print("  Average training loss: {0:.2f}".format(avg_train_loss))
-        print("  Training epcoh took: {:}".format(training_time))
+        print(f" Average training loss: {avg_train_loss}")
+        print(f" Training epcoh took: {training_time}")
 
         # ========================================
         #               Validation
@@ -163,44 +141,35 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
             total_eval_accuracy += flat_accuracy(logits, label_ids)
 
         avg_val_accuracy = total_eval_accuracy / len(validation_dataloader)
-        print("  Accuracy: {0:.2f}".format(avg_val_accuracy))
+        print(f" Accuracy: {avg_val_accuracy}")
 
         avg_val_loss = total_eval_loss / len(validation_dataloader)
 
         validation_time = format_time(time.time() - t0)
 
-        print("  Validation Loss: {0:.2f}".format(avg_val_loss))
-        print("  Validation took: {:}".format(validation_time))
-
-        training_stats.append(
-            {
-                'epoch': epoch_i + 1,
-                'Training Loss': avg_train_loss,
-                'Valid. Loss': avg_val_loss,
-                'Valid. Accur.': avg_val_accuracy,
-                'Training Time': training_time,
-                'Validation Time': validation_time
-            }
-        )
+        print(f" Validation Loss: {avg_val_loss}")
+        print("  Validation took: {validation_time}")
 
     print("")
     print("Training complete!")
 
-    print("Total training took {:} (h:mm:ss)".format(format_time(time.time()-total_t0)))
-    model.save_pretrained("save_model/v2_d_sample_60000")
+    model.save_pretrained(f"save_model/mode_{num_sample}")
 
     
 
-if __name__=='__main__':
+
+@click.command()
+@click.option('--num_sample', default=60000, help="Maximum number of sample from train data.")
+def main(num_sample):
+
     print("start...")
     ts = time.time()
 
-    max_seq_length = 128
     
-    with open("train_d_sample_6000.pkl", 'rb') as f:
+    with open(f"train_dataset_{num_sample}.pkl", 'rb') as f:
         train_dataset = pickle.load(f)
 
-    with open("test_d_sample_6000.pkl", 'rb') as f:
+    with open(f"val_dataset_{num_sample}.pkl", 'rb') as f:
         val_dataset = pickle.load(f)
 
     
@@ -225,13 +194,11 @@ if __name__=='__main__':
 #         'bert-base-uncased',
 #     )
     model.cuda()
-    
  
     optimizer = AdamW(model.parameters(),
                       lr = 1e-5, 
                       eps = 1e-8 
                     )
-    
     
     epochs = 1
 
@@ -242,4 +209,8 @@ if __name__=='__main__':
                                                 num_training_steps = total_steps)
     
     # Train Model
-    train_model(model, train_dataloader, validation_dataloader, epochs, scheduler, optimizer)
+    train_model(model, train_dataloader, validation_dataloader, epochs, scheduler, optimizer, num_sample)
+
+
+if __name__=='__main__':
+    main()
