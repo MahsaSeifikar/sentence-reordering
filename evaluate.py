@@ -78,7 +78,6 @@ def evaluate_testset(test_list, model, tokenizer, num_sample):
 @click.option('--max_seq_length', default=128, help="Maximum number of encoding sequence.")
 @click.option('--num_sample', default=60000, help="Maximum number of sample from train data.")
 def main(max_seq_length, num_sample):
-    print("Prepare data is starting...)
 
     test_list = pickle.load(open(os.path.join('data', 'test.pkl'), 'rb'))
     model = BertForSequenceClassification.from_pretrained(

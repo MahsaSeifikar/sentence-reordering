@@ -1,4 +1,4 @@
-
+import click
 import datetime
 import pickle
 import numpy as np
@@ -162,7 +162,6 @@ def train_model(model, train_dataloader, validation_dataloader, epochs, schedule
 @click.option('--num_sample', default=60000, help="Maximum number of sample from train data.")
 def main(num_sample):
 
-    print("start...")
     ts = time.time()
 
     

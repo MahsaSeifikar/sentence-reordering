@@ -12,6 +12,7 @@ import random
 
 from torch.utils.data import random_split
 from torch.utils.data import TensorDataset
+from transformers import BertTokenizer
 
 from utils import format_time
 
@@ -96,7 +97,6 @@ def get_tensor_dataset(tokenizer, max_seq_length, num_sample):
 @click.option('--max_seq_length', default=128, help="Maximum number of encoding sequence.")
 @click.option('--num_sample', default=60000, help="Maximum number of sample from train data.")
 def main(max_seq_length, num_sample):
-    print("Prepare data is starting....")
     ts = time.time()
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
