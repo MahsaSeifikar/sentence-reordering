@@ -1,4 +1,4 @@
-# ReorderSentence
+# Sentence Reordering
 
 This project aims to create a paragraph from 6 random sentences.
 
